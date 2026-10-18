@@ -1,0 +1,1165 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Contrôle en ville</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a blue enamel street plate over a single working column; the test itself runs as one large card at a time. */
+:root{
+  --bg:#EDF1F6; --surface:#FFFFFF; --surface-2:#E3E9F2; --sel:#E4EDFB;
+  --fg:#12203A; --muted:#55637C; --line:#C5CFDE;
+  --plaque:#1D4F9C; --plaque-fg:#FFFFFF; --pick:#1D4F9C;
+  --btn:#1D4F9C; --btn-fg:#FFFFFF; --focus:#1D4F9C;
+  --good:#17794A; --good-bg:#DCF2E5;
+  --warn:#8A5600; --warn-bg:#FBEBC6;
+  --bad:#B3261E; --bad-bg:#FCE1DE;
+  --l1:#A9C1E8; --l2:#5F8CD0; --l3:#1D4F9C;
+  --font-display:'Barlow Condensed','Arial Narrow',sans-serif;
+  --font-body:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1322; --surface:#131F38; --surface-2:#1B2B4B; --sel:#1B2E57;
+    --fg:#E6ECF8; --muted:#9FADC8; --line:#2A3B5F;
+    --plaque:#2859B0; --plaque-fg:#FFFFFF; --pick:#7FB0FF;
+    --btn:#6FA6F7; --btn-fg:#07122A; --focus:#8DB9FF;
+    --good:#6FD39B; --good-bg:#10382A;
+    --warn:#F3C86F; --warn-bg:#3A2C0C;
+    --bad:#FFA39B; --bad-bg:#44191B;
+    --l1:#35558F; --l2:#5A8BDB; --l3:#A2C6FF;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1322; --surface:#131F38; --surface-2:#1B2B4B; --sel:#1B2E57;
+  --fg:#E6ECF8; --muted:#9FADC8; --line:#2A3B5F;
+  --plaque:#2859B0; --plaque-fg:#FFFFFF; --pick:#7FB0FF;
+  --btn:#6FA6F7; --btn-fg:#07122A; --focus:#8DB9FF;
+  --good:#6FD39B; --good-bg:#10382A;
+  --warn:#F3C86F; --warn-bg:#3A2C0C;
+  --bad:#FFA39B; --bad-bg:#44191B;
+  --l1:#35558F; --l2:#5A8BDB; --l3:#A2C6FF;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:16px;line-height:1.5;
+  padding-block:20px 40px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3,p,ul{margin:0}
+ul{padding:0;list-style:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:24px}
+.hint{color:var(--muted);font-size:14px}
+
+/* street plate */
+.plaque{position:relative;background:var(--plaque);color:var(--plaque-fg);border-radius:14px;padding:24px 28px 22px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px 16px}
+.plaque::after{content:"";position:absolute;inset:6px;border:2px solid rgba(255,255,255,.92);border-radius:9px;pointer-events:none}
+.plaque-small{grid-column:1/-1;font:600 14px/1 var(--font-display);letter-spacing:.16em;text-transform:uppercase;opacity:.92}
+.plaque h1{font:700 clamp(54px,15vw,92px)/.9 var(--font-display);letter-spacing:.01em;text-transform:uppercase}
+.plaque-num{font:600 17px/1 var(--font-display);letter-spacing:.1em;text-transform:uppercase;border:2px solid rgba(255,255,255,.92);border-radius:5px;padding:6px 10px 5px;margin-bottom:6px;white-space:nowrap}
+.plaque.small{padding:14px 22px;grid-template-columns:1fr}
+.plaque.small h1{font-size:clamp(34px,9vw,48px)}
+
+/* setup */
+form{display:grid;gap:26px}
+fieldset{border:0;margin:0;padding:0;min-width:0}
+legend{padding:0;margin-bottom:10px;font:600 15px var(--font-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:44px;padding:8px 16px;border:2px solid var(--line);background:var(--surface);border-radius:999px;font-weight:700;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.chip[aria-pressed="true"]{background:var(--plaque);border-color:var(--plaque);color:var(--plaque-fg)}
+.chip[aria-pressed="true"]::before{content:"\2713"}
+.chip .n{font:500 13px var(--font-mono);opacity:.8}
+.switch{display:flex;gap:12px;align-items:center;min-height:44px;margin-top:6px;background:none;border:0;padding:0;cursor:pointer;text-align:left}
+.switch:disabled{opacity:.5;cursor:not-allowed}
+.track{width:44px;height:26px;border-radius:99px;background:var(--line);position:relative;flex:none}
+.knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--surface);box-shadow:0 1px 2px rgba(0,0,0,.3);transition:transform .15s}
+.switch[aria-checked="true"] .track{background:var(--plaque)}
+.switch[aria-checked="true"] .knob{transform:translateX(18px)}
+.switch .n{font:500 13px var(--font-mono);color:var(--muted)}
+.fmts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:10px}
+.fmt{position:relative;display:block}
+.fmt input{position:absolute;opacity:0;inset:0;width:100%;height:100%;margin:0;cursor:pointer}
+.fmt-body{display:grid;gap:3px;height:100%;border:2px solid var(--line);border-radius:12px;padding:12px 14px;background:var(--surface)}
+.fmt-body b{font:700 21px/1.1 var(--font-display);letter-spacing:.02em}
+.fmt-body span{color:var(--muted);font-size:14px;line-height:1.35}
+.rec{font:600 12px var(--font-display);font-style:normal;letter-spacing:.12em;text-transform:uppercase;color:var(--pick);margin-left:6px}
+.fmt input:checked+.fmt-body{border-color:var(--pick);background:var(--sel);box-shadow:inset 0 0 0 1px var(--pick)}
+.fmt input:focus-visible+.fmt-body{outline:3px solid var(--focus);outline-offset:2px}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:22px}
+.seg{display:flex;flex-wrap:wrap;border:2px solid var(--line);border-radius:10px;overflow:hidden;background:var(--surface)}
+.seg label{position:relative;display:block;flex:1 1 auto}
+.seg input{position:absolute;opacity:0;inset:0;margin:0;width:100%;height:100%;cursor:pointer}
+.seg span{display:block;padding:10px 14px;min-height:44px;font-weight:700;line-height:1.4;text-align:center;border-right:1px solid var(--line)}
+.seg label:last-child span{border-right:0}
+.seg input:checked+span{background:var(--plaque);color:var(--plaque-fg)}
+.seg input:focus-visible+span{outline:3px solid var(--focus);outline-offset:-3px}
+fieldset:disabled .seg{opacity:.45}
+fieldset:disabled .seg input{cursor:not-allowed}
+.settings .hint{margin-top:8px}
+.startbar{position:sticky;bottom:0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;background:var(--bg);border-top:1px solid var(--line)}
+.startbar p{font-weight:700}
+.btn{min-height:48px;padding:10px 22px;border-radius:10px;border:2px solid transparent;font-weight:700;font-size:17px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary{background:var(--btn);color:var(--btn-fg)}
+.btn-ghost{background:transparent;border-color:var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.link{background:none;border:0;color:var(--pick);text-decoration:underline;font-weight:700;cursor:pointer;min-height:44px;padding:0 4px}
+
+/* progress panel */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:16px}
+.panel h2{font:700 26px/1.1 var(--font-display);letter-spacing:.02em}
+.stack{display:flex;height:14px;border-radius:99px;overflow:hidden;background:var(--surface-2)}
+.stack i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block;flex:none}
+.c-new{background:var(--line)} .c-shaky{background:var(--l1)} .c-improving{background:var(--l2)} .c-solid{background:var(--l3)} .c-mastered{background:var(--good)}
+.catrows{display:grid;gap:8px}
+.catrow{display:grid;grid-template-columns:84px minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}
+.catrow .stack{height:10px}
+.catrow .n{font:500 13px var(--font-mono);color:var(--muted)}
+.fmtrow{display:grid;grid-template-columns:minmax(118px,170px) minmax(0,1fr) auto;gap:12px;align-items:center;font-size:14px}
+.fmtrow .n{font:500 13px var(--font-mono);color:var(--muted)}
+.fmtrow .bar{height:10px}
+.worst{display:flex;flex-wrap:wrap;gap:8px}
+.worst li{display:inline-flex;gap:10px;align-items:baseline;padding:6px 12px;border-radius:8px;background:var(--surface-2)}
+.worst .n{font:500 13px var(--font-mono);color:var(--muted)}
+.score-line{font:500 14px var(--font-mono);color:var(--muted)}
+.evals{display:grid;gap:12px}
+.eval{display:grid;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.eval-head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline}
+.eval-q{font:600 26px/1.1 var(--font-display);overflow-wrap:anywhere}
+.eval dl{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;margin:0}
+.eval dt{color:var(--muted);font-size:14px}
+.eval dd{margin:0;overflow-wrap:anywhere;font-weight:700}
+.eval mark{background:var(--fg);color:var(--bg);border-radius:3px;padding:0 2px}
+.eval .why{display:grid;gap:6px;font-size:15px}
+.eval .why p{margin:0}
+.mono{font:400 14px/1.5 var(--font-mono)}
+.panel-foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+
+/* quiz */
+.qtop{display:flex;align-items:center;justify-content:space-between;gap:10px 14px;flex-wrap:wrap}
+.qtop .btn{min-height:44px;padding:6px 16px}
+.count{font:600 19px var(--font-display);letter-spacing:.08em;text-transform:uppercase}
+.score{font:500 14px var(--font-mono);color:var(--muted)}
+.bar{height:8px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pick);transition:width .25s}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:16px}
+.qcard:focus{outline:none}
+.qmeta{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:14px}
+.tag{font:600 13px var(--font-display);letter-spacing:.12em;text-transform:uppercase;background:var(--surface-2);padding:4px 9px 3px;border-radius:5px}
+.kind{color:var(--muted)}
+.pips{margin-left:auto;display:inline-flex;gap:3px}
+.pips i{width:14px;height:6px;border-radius:2px;background:var(--line);display:block}
+.pips i.on{background:var(--pick)}
+.qlabel{color:var(--muted)}
+.prompt{font:600 clamp(36px,9vw,56px)/1.05 var(--font-display);overflow-wrap:anywhere;text-wrap:balance}
+.sub{color:var(--muted);margin-top:-8px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.opts{grid-template-columns:1fr}}
+.opt{display:flex;gap:12px;align-items:center;text-align:left;min-height:58px;padding:10px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;font-size:18px;line-height:1.3;overflow-wrap:anywhere}
+.opt kbd{font:500 13px var(--font-mono);border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:var(--muted);flex:none}
+.opt:hover:not(:disabled){border-color:var(--pick)}
+.opt:disabled{color:var(--fg);cursor:default}
+.opt.is-right{border-color:var(--good);background:var(--good-bg)}
+.opt.is-wrong{border-color:var(--bad);background:var(--bad-bg)}
+.opt.dim{opacity:.6}
+.st{margin-left:auto;font:600 13px var(--font-display);letter-spacing:.1em;text-transform:uppercase;flex:none;padding-left:8px}
+.field{width:100%;min-height:58px;padding:10px 14px;font:500 24px var(--font-body);color:var(--fg);background:var(--bg);border:2px solid var(--line);border-radius:12px}
+.field.is-ok{border-color:var(--good)} .field.is-bad{border-color:var(--bad)} .field.is-warn{border-color:var(--warn)}
+.conjrow{display:flex;gap:12px;align-items:center}
+.pron{font:600 34px var(--font-display);flex:none}
+.keys{display:flex;flex-wrap:wrap;gap:6px}
+.key{min-width:42px;height:42px;border:1px solid var(--line);background:var(--surface-2);border-radius:8px;font:500 18px var(--font-mono);cursor:pointer}
+.line{display:flex;flex-wrap:wrap;gap:8px;min-height:68px;padding:10px 4px;border-bottom:3px dashed var(--line);align-items:center}
+.line:empty::before{content:"Tap words below to build the answer";color:var(--muted);font-size:15px;padding-left:6px}
+.bank{display:flex;flex-wrap:wrap;gap:8px}
+.tile{min-height:46px;padding:8px 16px;border:2px solid var(--line);background:var(--surface-2);border-radius:10px;font-size:20px;cursor:pointer}
+.line .tile{background:var(--sel);border-color:var(--pick)}
+.tile:disabled{cursor:default;color:var(--fg)}
+.line.is-ok{border-bottom-color:var(--good)} .line.is-bad{border-bottom-color:var(--bad)}
+.cells{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-end}
+.cell{min-width:36px;height:60px;padding:0 4px;border:2px dashed var(--pick);background:var(--sel);border-radius:8px;font:500 28px var(--font-mono);cursor:pointer;color:var(--fg)}
+.cell.changed{border-style:solid}
+.cell:disabled{color:var(--fg);cursor:default}
+.cell.good{border-style:solid;border-color:var(--good);background:var(--good-bg)}
+.cell.bad{border-style:solid;border-color:var(--bad);background:var(--bad-bg)}
+.fixed{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:60px;font:500 28px var(--font-mono)}
+.gap{width:16px}
+.arts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.art{min-height:76px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 36px/1 var(--font-display);border:2px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer}
+.art kbd{font:500 12px var(--font-mono);color:var(--muted)}
+.art:hover:not(:disabled){border-color:var(--pick)}
+.art:disabled{color:var(--fg);cursor:default}
+.art.is-right{border-color:var(--good);background:var(--good-bg)} .art.is-wrong{border-color:var(--bad);background:var(--bad-bg)} .art.dim{opacity:.6}
+.fb{display:grid;gap:6px;padding:14px 16px;border-radius:12px;border:2px solid var(--line);background:var(--surface-2)}
+.fb.ok{background:var(--good-bg);border-color:var(--good)}
+.fb.warn{background:var(--warn-bg);border-color:var(--warn)}
+.fb.bad{background:var(--bad-bg);border-color:var(--bad)}
+.fb h3{font:700 22px/1.1 var(--font-display);letter-spacing:.04em;text-transform:uppercase}
+.fb.ok h3{color:var(--good)} .fb.warn h3{color:var(--warn)} .fb.bad h3{color:var(--bad)}
+.fb .ans{font-size:22px;font-weight:700}
+.fb .pair,.fb .note{font-size:15px}
+.fb .row{font:400 14px/1.5 var(--font-mono);overflow-wrap:anywhere}
+.fb mark{background:var(--fg);color:var(--bg);border-radius:3px;padding:0 2px}
+.qactions{display:flex;gap:10px;flex-wrap:wrap}
+.qactions .btn{min-width:150px}
+.qfoot{display:flex;justify-content:center}
+
+/* summary */
+.result{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+.big{font:700 clamp(76px,22vw,132px)/.9 var(--font-display)}
+.of{font:600 clamp(30px,8vw,48px)/1 var(--font-display);color:var(--muted)}
+.pct{font:600 clamp(30px,8vw,48px)/1 var(--font-display);margin-left:auto}
+.work{display:grid;gap:10px}
+.work li{display:grid;gap:2px;padding:10px 14px;border-radius:10px;background:var(--surface-2)}
+.work b{font-weight:700}
+.work span{color:var(--muted);font-size:15px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font:600 14px var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:6px 10px 6px 0;border-bottom:2px solid var(--line)}
+td{padding:9px 10px 9px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div id="app"></div>
+
+<script>
+(function(){
+'use strict';
+const $=(s,r)=>(r||document).querySelector(s);
+const $$=(s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const rnd=n=>Math.floor(Math.random()*n);
+const pick=a=>a[rnd(a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const strip=s=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').normalize('NFC');
+function lev(a,b){
+  const m=a.length,n=b.length;if(!m)return n;if(!n)return m;
+  let p=Array.from({length:n+1},(_,i)=>i);
+  for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++){c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));}p=c;}
+  return p[n];
+}
+const normFr=s=>s.normalize('NFC').replace(/[’‘`´]/g,"'").replace(/[.…]+/g,' ').replace(/-/g,' ').replace(/\b([ld])'\s+/gi,"$1'").replace(/\s+/g,' ').trim().toLowerCase();
+const STOP=['the','a','an'];
+const normEn=s=>s.normalize('NFC').toLowerCase().replace(/[’‘`´]/g,"'").replace(/\([^)]*\)/g,' ').replace(/[^a-z0-9' ]/g,' ').replace(/'/g,'').split(/\s+/).filter(w=>w&&!STOP.includes(w)).join(' ');
+const normKeep=s=>s.normalize('NFC').toLowerCase().replace(/[’‘`´]/g,"'").replace(/[^a-z0-9' ]/g,' ').replace(/'/g,'').split(/\s+/).filter(w=>w&&!STOP.includes(w)).join(' ');
+
+/* ---------- data ---------- */
+const PLACES=[
+["le supermarché","the supermarket",""],
+["le fleuriste","the florist","flower shop"],
+["le bureau de tabac","the tobacconist","tobacco shop|tobacco office|tobacconists"],
+["le coiffeur","the hairdresser (male)","barber|hairdresser male"],
+["la coiffeuse","the hairdresser (female)","hairdresser female"],
+["la boulangerie","the bakery","bakers|baker|bakery shop"],
+["la boucherie","the butcher's","butcher|butcher shop"],
+["la pâtisserie","the cake shop / pastry shop","patisserie|pastry"],
+["la poissonnerie","the fishmonger's","fishmonger|fish shop"],
+["la charcuterie","the delicatessen / pork butcher's","deli|pork butcher"],
+["la librairie","the bookshop","bookstore|book shop"],
+["la confiserie","the sweet shop / confectioner's","confectioner|confectionery|candy shop|sweetshop"],
+["la pharmacie","the pharmacy","chemist|chemists|drugstore"],
+["la papeterie","the stationery shop","stationery store|stationers|stationer|stationery"],
+["la fromagerie","the cheese shop","cheese store|cheesemonger"],
+["l'épicerie","the grocer's","grocer|grocery store|grocery shop|grocery"],
+["l'hôtel de ville","the town hall","city hall"],
+["l'hôpital","the hospital",""],
+["l'office du tourisme","the tourist office","tourism office|tourist information|tourist information office"],
+["le théâtre","the theatre","theater"],
+["le musée","the museum",""],
+["le parc","the park",""],
+["la gare","the train station","railway station|station|train depot"],
+["la gare routière","the bus station","coach station"],
+["la banque","the bank",""],
+["la bibliothèque","the library",""],
+["la poste","the post office","post"],
+["l'église","the church",""],
+["la caserne des pompiers","the fire station","fire house|firehouse|fire department"],
+["la gendarmerie","the police station (gendarmerie)","gendarmerie|police"],
+["la piscine","the swimming pool","pool|swimming baths"]
+];
+const DIRS=[
+["Continuez tout droit","Continue straight on","continue straight|go straight on|go straight ahead|go straight|carry on straight|carry straight on|continue straight ahead|keep going straight"],
+["Tournez à gauche","Turn left","take a left|go left"],
+["Tournez à droite","Turn right","take a right|go right"],
+["Prenez la première rue","Take the first street","take the first road|take the first turning|first street"],
+["Prenez la deuxième rue","Take the second street","take the second road|take the second turning|second street"],
+["Continuez jusqu'à ...","Continue until ...","continue as far as|continue up to|continue to|carry on until|keep going until|continue till|go until"],
+["les feux","the traffic lights","lights|traffic light"],
+["le carrefour","the crossroads / junction","intersection|crossroad"],
+["le rond-point","the roundabout","traffic circle|round about"]
+];
+const VERBS={
+ aller:{inf:'aller',en:'to go',base:['go'],s3:['goes'],ing:['going'],
+  row:'je vais · tu vas · il/elle/on va · nous allons · vous allez · ils/elles vont',
+  forms:[['je','vais','I go','I'],['tu','vas','you go (one person/informal)','you'],['il','va','he goes','he'],['elle','va','she goes','she'],['on','va','one goes / we go','one|we'],['nous','allons','we go','we'],['vous','allez','you go (more than one person/formal)','you'],['ils','vont','they go (masculine)','they'],['elles','vont','they go (feminine)','they']]},
+ voir:{inf:'voir',en:'to see',base:['see'],s3:['sees'],ing:['seeing'],
+  row:'je vois · tu vois · il/elle/on voit · nous voyons · vous voyez · ils/elles voient',
+  forms:[['je','vois','I see','I'],['tu','vois','you see (one person/informal)','you'],['il','voit','he sees','he'],['elle','voit','she sees','she'],['on','voit','one sees / we see','one|we'],['nous','voyons','we see','we'],['vous','voyez','you see (more than one person/formal)','you'],['ils','voient','they see (masculine)','they'],['elles','voient','they see (feminine)','they']]},
+ sortir:{inf:'sortir',en:'to go out / to leave',base:['go out','leave','exit'],s3:['goes out','leaves','exits'],ing:['going out','leaving','exiting'],
+  row:'je sors · tu sors · il/elle/on sort · nous sortons · vous sortez · ils/elles sortent',
+  forms:[['je','sors','I go out','I'],['tu','sors','you go out (one person/informal)','you'],['il','sort','he goes out','he'],['elle','sort','she goes out','she'],['on','sort','one goes out / we go out','one|we'],['nous','sortons','we go out','we'],['vous','sortez','you go out (more than one person/formal)','you'],['ils','sortent','they go out (masculine)','they'],['elles','sortent','they go out (feminine)','they']]}
+};
+const CATS=[{id:'places',label:'Places'},{id:'dirs',label:'Directions'},{id:'aller',label:'aller'},{id:'voir',label:'voir'},{id:'sortir',label:'sortir'}];
+const CATLABEL={};CATS.forEach(c=>{CATLABEL[c.id]=c.label;});
+const G_ELIDED={"l'épicerie":'f',"l'hôtel de ville":'m',"l'hôpital":'m',"l'office du tourisme":'m',"l'église":'f'};
+const ART_RE=/^(le |la |l')(.*)$/;
+const splitAlts=s=>s?s.split('|'):[];
+
+function tokensOf(core){
+  const t=[];
+  core.split(' ').forEach(w=>{const m=w.match(/^(l')(.+)$/i);if(m){t.push(m[1],m[2]);}else t.push(w);});
+  return t;
+}
+const joinTokens=a=>a.join(' ').replace(/(^|\s)l' /gi,"$1l'");
+function contract(s,be){return s==='I'?"I'm":s+"'"+(be==='are'?'re':'s');}
+function verbAlts(v,subj){
+  const out=[];
+  subj.split('|').forEach(s=>{
+    const third=s==='he'||s==='she'||s==='one';
+    const be=s==='I'?'am':(third?'is':'are');
+    (third?v.s3:v.base).forEach(x=>out.push(s+' '+x));
+    v.ing.forEach(x=>{out.push(s+' '+be+' '+x);out.push(contract(s,be)+' '+x);});
+  });
+  return out;
+}
+const ITEMS=[];
+function addItem(o){
+  o.id=o.fr;
+  o.core=o.fr.replace(/[.…]+/g,'').replace(/\s+/g,' ').trim();
+  o.hasAccent=strip(o.core)!==o.core;
+  o.tokens=tokensOf(o.core);
+  const parts=o.en.split('/').map(s=>s.trim());
+  const acc=new Set(parts.map(normEn));
+  (o.alts||[]).forEach(a=>acc.add(normEn(a)));
+  (o.gen||[]).forEach(a=>acc.add(normEn(a)));
+  acc.delete('');
+  o.accepted=acc;
+  o.keep=new Set(parts.map(normKeep));
+  ITEMS.push(o);
+}
+function addPlain(rows,cat){
+  rows.forEach(r=>{
+    const o={fr:r[0],en:r[1],alts:splitAlts(r[2]),cat:cat};
+    const m=r[0].match(ART_RE);
+    if(m){o.art=m[1].trim();o.noun=m[2];o.g=o.art==='le'?'m':(o.art==='la'?'f':G_ELIDED[r[0]]);}
+    addItem(o);
+  });
+}
+addPlain(PLACES,'places');
+addPlain(DIRS,'dirs');
+Object.keys(VERBS).forEach(k=>{
+  const v=VERBS[k];
+  v.forms.forEach(f=>addItem({fr:f[0]+' '+f[1],en:f[2],cat:k,gen:verbAlts(v,f[3]),alts:[],verb:{key:k,inf:v.inf,vEn:v.en,pron:f[0],form:f[1],row:v.row}}));
+});
+const byId={};ITEMS.forEach(i=>{byId[i.id]=i;});
+
+/* ---------- formats and difficulty ---------- */
+const FORMATS=[
+ {id:'adaptive',name:'Adaptive',desc:'Scores every word from all your answers, then picks words and formats at random, weighted towards what you get wrong most.'},
+ {id:'mc',name:'Multiple choice',desc:'Pick the right translation from four options.'},
+ {id:'type',name:'Type the answer',desc:'Write the translation yourself, like the real test.'},
+ {id:'tiles',name:'Word tiles',desc:'Build the French phrase from a bank of words.'},
+ {id:'accent',name:'Accents',desc:'Tap the vowels to add the right accents.'},
+ {id:'article',name:'Articles',desc:"Choose le, la or l' for each noun."},
+ {id:'conj',name:'Conjugation',desc:'Fill in the verb form for aller, voir and sortir.'}
+];
+const APPLIES={
+ mc_fe:()=>true,mc_ef:()=>true,type_fe:()=>true,type_ef:()=>true,
+ tiles:it=>it.tokens.length>=2&&it.tokens.length<=7,
+ accent:it=>it.hasAccent,
+ article:it=>!!it.art,
+ conj:it=>!!it.verb
+};
+const DIFF={mc_fe:0,mc_ef:1,tiles:1,article:1,type_fe:2,conj:2,type_ef:3,accent:3};
+/* which mistake types each format trains, and which formats suit each direction */
+const KIND_ERR={accent:['accent'],type_ef:['accent','article','spelling'],article:['article'],tiles:['order','article'],conj:['ending'],type_fe:['spelling','vocab'],mc_fe:['vocab'],mc_ef:['vocab']};
+const KINDSHORT={mc_fe:'Choice, FR to EN',mc_ef:'Choice, EN to FR',type_fe:'Typing, FR to EN',type_ef:'Typing, EN to FR',tiles:'Word tiles',accent:'Accents',article:'Articles',conj:'Conjugation'};
+const DIRKINDS={fe:['mc_fe','type_fe','conj'],ef:['mc_ef','type_ef','tiles','accent','article','conj'],mix:Object.keys(DIFF)};
+const KINDLABEL={mc_fe:'Multiple choice · French to English',mc_ef:'Multiple choice · English to French',type_fe:'Typing · French to English',type_ef:'Typing · English to French',tiles:'Word tiles',accent:'Accents',article:'Articles',conj:'Conjugation'};
+const INSTR={mc_fe:'Choose the English meaning',mc_ef:'Choose the French',type_fe:'Type the English',type_ef:'Type the French, with the article and accents',tiles:'Build the French from the tiles',accent:'Tap the vowels to add the accents',article:'Choose the article',conj:'Fill in the verb form'};
+const VAR={a:['a','à','â'],c:['c','ç'],e:['e','é','è','ê','ë'],i:['i','î','ï'],o:['o','ô'],u:['u','ù','û','ü']};
+const KEYS=['à','â','ç','é','è','ê','ë','î','ï','ô','ù','û',"'"];
+const BUCKETS=[['new','Not started'],['shaky','Shaky'],['improving','Improving'],['solid','Solid'],['mastered','Mastered']];
+const ERRLABEL={
+ accent:['Accents',"Use the Accents format and tap vowels to cycle é, è and ê."],
+ spelling:['Spelling','Check double letters and endings when you type.'],
+ article:["Articles (le, la, l')",'Learn each noun with its article. Nouns that start with a vowel or silent h take l\'.'],
+ ending:['Verb endings','Say the whole row aloud: je vais, tu vas, il va, nous allons.'],
+ order:['Word choice and order','Directions follow the pattern verb, article, noun.'],
+ vocab:['Vocabulary recall','Repeat these in Multiple choice until they feel easy, then type them.']
+};
+
+/* ---------- storage ---------- */
+const KEY='controle-en-ville-v3';
+let store={items:{},set:{},last:null,sk:{},et:{},bk:{}};
+try{const raw=localStorage.getItem(KEY);if(raw){const o=JSON.parse(raw);if(o&&typeof o==='object'){store.items=o.items||{};store.set=o.set||{};store.last=o.last||null;store.sk=o.sk||{};store.et=o.et||{};store.bk=o.bk||{};}}}catch(e){}
+function save(){try{store.set=cfg;localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+const DEF={cats:CATS.map(c=>c.id),weak:false,fmt:'adaptive',dir:'mix',len:30,acc:'strict'};
+let cfg=Object.assign({},DEF,store.set||{});
+cfg.cats=Array.isArray(cfg.cats)?cfg.cats.filter(c=>CATLABEL[c]):DEF.cats;
+if(!FORMATS.some(f=>f.id===cfg.fmt))cfg.fmt='adaptive';
+if(!['mix','fe','ef'].includes(cfg.dir))cfg.dir='mix';
+if(![0,15,30,60].includes(+cfg.len))cfg.len=30;
+if(!['strict','warn'].includes(cfg.acc))cfg.acc='strict';
+/* Learning model. Each word has a score a, each format has a difficulty b, and the chance of a right answer is
+   sigmoid(a + b). Every answer nudges both: a right answer in a hard format lifts the word more than one in an
+   easy format, and a miss in an easy format drops it more. A word's score is the average chance across the formats
+   that fit it, so no word has to be answered in every format. */
+const PRIOR_B={mc_fe:1,mc_ef:0.6,tiles:0.3,article:0.3,type_fe:0,conj:0,type_ef:-0.7,accent:-0.7};
+const sig=x=>1/(1+Math.exp(-x));
+const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
+const bOf=k=>store.bk&&store.bk[k]!==undefined?store.bk[k]:PRIOR_B[k];
+const aOf=id=>{const s=store.items[id];return s&&s.a!==undefined?s.a:0;};
+const pOf=(it,k)=>sig(aOf(it.id)+bOf(k));
+const kindsFor=i=>Object.keys(DIFF).filter(k=>APPLIES[k](i));
+const wordScore=i=>{const ks=kindsFor(i);return ks.reduce((t,k)=>t+pOf(i,k),0)/ks.length;};
+const triedN=i=>{const s=store.items[i.id];return s&&s.n?s.n:0;};
+const isWeak=i=>{const s=store.items[i.id];return !!s&&s.n>0&&(s.last!=='ok'||wordScore(i)<0.65);};
+const bucket=i=>{
+  if(!triedN(i))return 'new';
+  const sc=wordScore(i),n=triedN(i);
+  if(n>=3&&sc>=0.8)return 'mastered';
+  if(n>=2&&sc>=0.65)return 'solid';
+  return sc>=0.45?'improving':'shaky';
+};
+
+const app=$('#app');
+let view='setup';
+let S=null;
+
+/* ---------- setup screen ---------- */
+function computePool(){
+  let p=ITEMS.filter(i=>cfg.cats.includes(i.cat));
+  if(cfg.weak)p=p.filter(isWeak);
+  if(['tiles','accent','article','conj'].includes(cfg.fmt))p=p.filter(APPLIES[cfg.fmt]);
+  return p;
+}
+function stackHtml(items){
+  const n=items.length||1;const c={};BUCKETS.forEach(b=>{c[b[0]]=0;});
+  items.forEach(i=>{c[bucket(i)]++;});
+  return BUCKETS.map(b=>c[b[0]]?`<i class="c-${b[0]}" style="width:${(c[b[0]]/n*100).toFixed(2)}%"></i>`:'').join('');
+}
+function renderProgress(){
+  const triedItems=ITEMS.filter(i=>triedN(i)>0);
+  const seen=triedItems.length;
+  const avg=seen?Math.round(triedItems.reduce((t,i)=>t+wordScore(i),0)/seen*100):0;
+  const worst=triedItems.slice().sort((a,b)=>wordScore(a)-wordScore(b)).slice(0,6).filter(i=>wordScore(i)<0.8);
+  const worstHtml=worst.length?`<div><p class="hint">Needs work most</p><ul class="worst">${worst.map(i=>`<li><span lang="fr">${esc(i.fr)}</span><span class="n">${Math.round(wordScore(i)*100)}</span></li>`).join('')}</ul></div>`:'';
+  const counts={};BUCKETS.forEach(b=>{counts[b[0]]=0;});ITEMS.forEach(i=>{counts[bucket(i)]++;});
+  const weak=ITEMS.filter(isWeak).length;
+  const legend=BUCKETS.map(b=>`<span><i class="sw c-${b[0]}"></i>${b[1]} ${counts[b[0]]}</span>`).join('');
+  const rows=CATS.map(c=>{const its=ITEMS.filter(i=>i.cat===c.id);const m=its.filter(i=>bucket(i)==='mastered').length;
+    return `<div class="catrow"><span>${esc(c.label)}</span><div class="stack" aria-hidden="true">${stackHtml(its)}</div><span class="n">${m}/${its.length}</span></div>`;}).join('');
+  let last='';
+  if(store.last&&store.last.n){last=`<p class="hint">Last test: ${store.last.pts} of ${store.last.n} (${Math.round(store.last.pts/store.last.n*100)}%)</p>`;}
+  const intro=seen?`<p>${seen} of ${ITEMS.length} words tried. Average word score <b>${avg}</b> out of 100. ${weak} need work.</p><p class="hint">Each word's score comes from all your answers, weighted by how hard the format was. You never need every format for every word.</p>`:`<p>Nothing tracked yet. After your first test, every word gets a score out of 100 built from your answers, and the bar below shows how many are shaky, improving, solid or mastered.</p>`;
+  const fmtRows=Object.keys(DIFF).filter(k=>(store.sk[k]||[]).length).map(k=>{
+    const h=store.sk[k];const ok=h.reduce((a,b)=>a+b,0);const p=Math.round(ok/h.length*100);
+    return `<div class="fmtrow"><span>${KINDSHORT[k]}</span><div class="bar" aria-hidden="true"><i style="width:${p}%"></i></div><span class="n">${ok}/${h.length}</span></div>`;}).join('');
+  const foc=Object.keys(store.et||{}).filter(t=>store.et[t]>=0.6&&ERRLABEL[t]).sort((a,b)=>store.et[b]-store.et[a]).slice(0,3).map(t=>ERRLABEL[t][0]);
+  const focus=foc.length?`<p>Adaptive is leaning on: <b>${esc(foc.join(', '))}</b>.</p>`:'';
+  $('#progress').innerHTML=`<h2>Your progress</h2>${intro}${focus}
+    <div class="stack" role="img" aria-label="${BUCKETS.map(b=>b[1]+' '+counts[b[0]]).join(', ')}">${stackHtml(ITEMS)}</div>
+    <div class="legend">${legend}</div>
+    <div class="catrows"><p class="hint">Mastered words per list</p>${rows}</div>
+    ${fmtRows?`<div class="catrows"><p class="hint">Right answers by format, last 8 of each</p>${fmtRows}</div>`:''}
+    ${worstHtml}
+    <div class="panel-foot">${last||'<span></span>'}<button type="button" class="link" data-action="reset" id="resetBtn">Reset progress</button></div>`;
+}
+function renderSetup(){
+  view='setup';S=null;
+  app.innerHTML=`<div class="wrap">
+  <header class="plaque">
+    <p class="plaque-small">Contrôle de français</p>
+    <h1>En ville</h1>
+    <p class="plaque-num">${ITEMS.length} mots</p>
+  </header>
+  <form id="setupForm" onsubmit="return false">
+    <fieldset>
+      <legend>Lists</legend>
+      <div class="chips">${CATS.map(c=>`<button type="button" class="chip" data-action="chip" data-cat="${c.id}" aria-pressed="false">${esc(c.label)} <span class="n">${ITEMS.filter(i=>i.cat===c.id).length}</span></button>`).join('')}</div>
+      <button type="button" class="switch" id="weakBtn" role="switch" aria-checked="false" data-action="weak"><span class="track"><span class="knob"></span></span><span>Weak words only <span class="n">(<span id="weakN">0</span>)</span></span></button>
+      <p class="hint" id="weakHint">Available after your first test.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Answer format</legend>
+      <div class="fmts">${FORMATS.map(f=>`<label class="fmt"><input type="radio" name="fmt" value="${f.id}"><span class="fmt-body"><b>${f.name}${f.id==='adaptive'?'<em class="rec">Recommended</em>':''}</b><span>${f.desc}</span></span></label>`).join('')}</div>
+    </fieldset>
+    <div class="settings">
+      <fieldset id="dirSet">
+        <legend>Direction</legend>
+        <div class="seg">
+          <label><input type="radio" name="dir" value="mix"><span>Both ways</span></label>
+          <label><input type="radio" name="dir" value="fe"><span>French to English</span></label>
+          <label><input type="radio" name="dir" value="ef"><span>English to French</span></label>
+        </div>
+        <p class="hint" id="dirNote" hidden>This format sets its own direction.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Length</legend>
+        <div class="seg">
+          <label><input type="radio" name="len" value="15"><span>15</span></label>
+          <label><input type="radio" name="len" value="30"><span>30</span></label>
+          <label><input type="radio" name="len" value="60"><span>60</span></label>
+          <label><input type="radio" name="len" value="0"><span>No limit</span></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Accents when typing</legend>
+        <div class="seg">
+          <label><input type="radio" name="acc" value="strict"><span>Strict</span></label>
+          <label><input type="radio" name="acc" value="warn"><span>Forgiving</span></label>
+        </div>
+        <p class="hint" id="accNote"></p>
+      </fieldset>
+    </div>
+    <div class="startbar">
+      <p id="startInfo"></p>
+      <button type="button" class="btn btn-primary" id="startBtn" data-action="start">Start test</button>
+    </div>
+  </form>
+  <section class="panel" id="progress" aria-label="Progress"></section>
+  </div>`;
+  renderProgress();refreshSetup();
+}
+function refreshSetup(){
+  $$('[data-cat]').forEach(b=>b.setAttribute('aria-pressed',String(cfg.cats.includes(b.dataset.cat))));
+  const weakN=ITEMS.filter(i=>cfg.cats.includes(i.cat)&&isWeak(i)).length;
+  if(weakN===0)cfg.weak=false;
+  const w=$('#weakBtn');w.setAttribute('aria-checked',String(cfg.weak));w.disabled=weakN===0;
+  $('#weakN').textContent=weakN;$('#weakHint').hidden=weakN>0;
+  $$('input[name=fmt]').forEach(r=>{r.checked=r.value===cfg.fmt;});
+  $$('input[name=dir]').forEach(r=>{r.checked=r.value===cfg.dir;});
+  $$('input[name=len]').forEach(r=>{r.checked=+r.value===+cfg.len;});
+  $$('input[name=acc]').forEach(r=>{r.checked=r.value===cfg.acc;});
+  const dirOK=['adaptive','mc','type'].includes(cfg.fmt);
+  $('#dirSet').disabled=!dirOK;$('#dirNote').hidden=dirOK;
+  $('#accNote').textContent=cfg.acc==='strict'?'A missing accent counts as wrong.':'A missing accent counts as right, but is flagged.';
+  const pool=computePool();
+  const lenTxt=+cfg.len?cfg.len+' questions':'no limit';
+  $('#startInfo').textContent=pool.length?`${pool.length} words · ${lenTxt}`:'No words match. Pick another list or format.';
+  $('#startBtn').disabled=!pool.length;
+  save();
+}
+
+/* ---------- session ---------- */
+function startSession(o){
+  o=o||{};
+  const pool=o.pool||computePool();
+  if(!pool.length)return;
+  S={pool:pool,fmt:o.fmt||cfg.fmt,dir:o.dir||cfg.dir,total:o.len!==undefined?o.len:(+cfg.len||Infinity),
+     n:0,qi:0,points:0,recent:[],retry:[],errs:{},byCat:{},missed:{},log:[],t0:Date.now(),q:null,answered:false,acc:cfg.acc,lastKind:''};
+  S.kinds=allowedKinds();
+  view='quiz';renderQuiz();
+}
+function wpick(arr,w){let t=0;w.forEach(x=>{t+=x;});let r=Math.random()*t;for(let i=0;i<arr.length;i++){r-=w[i];if(r<=0)return arr[i];}return arr[arr.length-1];}
+function allowedKinds(){
+  const f=S.fmt,d=S.dir;
+  if(f==='adaptive')return DIRKINDS[d];
+  if(f==='mc')return d==='fe'?['mc_fe']:(d==='ef'?['mc_ef']:['mc_fe','mc_ef']);
+  if(f==='type')return d==='fe'?['type_fe']:(d==='ef'?['type_ef']:['type_fe','type_ef']);
+  return [f];
+}
+/* Questions are drawn at random, weighted by how likely you are to get them wrong: weak words and weak formats
+   come up most, strong ones rarely. A question that is almost certainly too hard right now is halved, so a word
+   you do not know yet tends to appear in an easier format first. */
+function pairWeight(it,kind){
+  const p=pOf(it,kind);
+  let w=Math.pow(1-p,2);
+  if(p<0.15)w*=0.5;
+  if(!triedN(it))w*=3;
+  return w+0.03;
+}
+function whyText(it,kind){
+  const s=store.items[it.id];
+  if(s&&s.n&&s.last!=='ok')return 'Focus: you missed this word last time';
+  const et=store.et||{};let top='',topV=0;
+  KIND_ERR[kind].forEach(t=>{const v=et[t]||0;if(v>topV){topV=v;top=t;}});
+  if(topV>=0.8)return 'Focus: '+ERRLABEL[top][0];
+  const ks=Object.keys(DIFF);const mean=ks.reduce((t,k)=>t+bOf(k),0)/ks.length;
+  if(bOf(kind)<mean-0.35)return 'Focus: this is one of your weaker formats';
+  if(!triedN(it))return 'New word';
+  return '';
+}
+function pickPair(){
+  const di=S.retry.findIndex(r=>r.due<=S.n);
+  if(di>=0){
+    const r=S.retry.splice(di,1)[0];const it=byId[r.id];
+    if(it&&S.pool.includes(it)){
+      let ks=S.kinds.filter(k=>APPLIES[k](it));
+      const other=ks.filter(k=>k!==r.kind);if(other.length)ks=other;
+      if(ks.length){const kind=wpick(ks,ks.map(k=>pairWeight(it,k)));return {item:it,kind:kind,why:S.fmt==='adaptive'?'Missed earlier, trying again another way':''};}
+    }
+  }
+  const k=Math.min(5,S.pool.length-1);
+  const avoid=new Set(k>0?S.recent.slice(-k):[]);
+  const build=skip=>{
+    const out=[];
+    S.pool.forEach(it=>{
+      if(skip&&avoid.has(it.id))return;
+      S.kinds.forEach(kind=>{
+        if(!APPLIES[kind](it))return;
+        let w=pairWeight(it,kind);
+        if(kind===S.lastKind)w*=0.4;
+        out.push({item:it,kind:kind,w:w});
+      });
+    });
+    return out;
+  };
+  let c=build(true);if(!c.length)c=build(false);
+  const p=wpick(c,c.map(x=>x.w));
+  return {item:p.item,kind:p.kind,why:S.fmt==='adaptive'?whyText(p.item,p.kind):''};
+}
+function overlap(a,b){for(const x of a)if(b.has(x))return true;return false;}
+function mcOptions(it,dir){
+  const val=x=>dir==='fe'?x.en:x.fr;
+  const ok=ITEMS.filter(x=>x.id!==it.id&&!overlap(x.keep,it.keep));
+  const same=shuffle(ok.filter(x=>x.cat===it.cat)),other=shuffle(ok.filter(x=>x.cat!==it.cat));
+  const chosen=[];const seen=new Set([val(it)]);
+  for(const x of same.concat(other)){if(chosen.length>=3)break;const v=val(x);if(seen.has(v))continue;seen.add(v);chosen.push(x);}
+  return shuffle([it].concat(chosen)).map(x=>({text:val(x),correct:x.id===it.id}));
+}
+function buildData(q){
+  const it=q.item;
+  if(q.kind==='mc_fe')q.opts=mcOptions(it,'fe');
+  else if(q.kind==='mc_ef')q.opts=mcOptions(it,'ef');
+  else if(q.kind==='tiles'){
+    const own=new Set(it.tokens.map(t=>t.toLowerCase()));
+    let pool=[];ITEMS.filter(x=>x.cat===it.cat&&x.id!==it.id).forEach(x=>x.tokens.forEach(t=>{const l=t.toLowerCase();if(!own.has(l)&&!pool.includes(l))pool.push(l);}));
+    pool=shuffle(pool);
+    const want=it.tokens.length<=3?3:2;const dis=[];
+    if(it.art){const alt=shuffle(['le','la',"l'"].filter(a=>a!==it.art&&!own.has(a)))[0];if(alt)dis.push(alt);}
+    pool.forEach(t=>{if(dis.length<want&&!dis.includes(t))dis.push(t);});
+    q.bank=shuffle(it.tokens.map(t=>t.toLowerCase()).concat(dis)).map((t,i)=>({id:i,text:t}));
+    q.line=[];
+  }
+  else if(q.kind==='accent'){
+    q.cells=Array.from(it.core).map(ch=>{
+      if(ch===' ')return {gap:true,ch:' '};
+      const lower=ch.toLowerCase();const base=strip(lower);
+      const vars=VAR[base];
+      if(vars){const up=ch!==lower;const list=vars.map(v=>up?v.toUpperCase():v);return {vars:list,idx:0,exp:ch,ch:list[0]};}
+      return {fixed:true,ch:ch,exp:ch};
+    });
+  }
+}
+function nextQuestion(){
+  S.answered=false;S.qi=S.n+1;
+  const c=pickPair();const item=c.item,kind=c.kind;
+  const q={item:item,kind:kind,d:DIFF[kind],why:c.why};
+  S.lastKind=kind;
+  buildData(q);S.q=q;S.recent.push(item.id);
+  paintQuestion();updateHeader();
+  window.scrollTo(0,0);
+}
+function updateHeader(){
+  const fin=S.total!==Infinity;
+  $('#qcount').textContent=fin?`Question ${Math.min(S.qi,S.total)} of ${S.total}`:`Question ${S.qi}`;
+  $('#qscore').textContent=`${S.points} right · ${S.n-S.points} missed`;
+  const bar=$('#qbar');const wrap=$('#qbarwrap');
+  wrap.hidden=!fin;
+  if(fin){const pct=Math.round(S.n/S.total*100);bar.style.width=pct+'%';wrap.setAttribute('aria-valuenow',String(pct));}
+}
+function renderQuiz(){
+  app.innerHTML=`<div class="wrap">
+    <div class="qtop"><button type="button" class="btn btn-ghost" data-action="quit">Quit</button><div class="count" id="qcount"></div><div class="score" id="qscore"></div></div>
+    <div class="bar" id="qbarwrap" role="progressbar" aria-label="Test progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="qbar" style="width:0"></i></div>
+    <div id="qhost"></div>
+    <div class="qfoot"><button type="button" class="link" data-action="finish">Finish and see results</button></div>
+  </div>`;
+  nextQuestion();
+}
+function paintQuestion(){
+  const q=S.q,it=q.item,k=q.kind;
+  let promptHtml,promptLang='en',sub='';
+  if(k==='mc_fe'||k==='type_fe'){promptHtml=esc(it.fr);promptLang='fr';}
+  else if(k==='article'){promptHtml=esc(it.noun);promptLang='fr';sub=it.en;}
+  else if(k==='conj'){promptHtml=esc(it.verb.inf);promptLang='fr';sub=`${it.verb.vEn}. Meaning: ${it.en}`;}
+  else{promptHtml=esc(it.en);}
+  let area='';
+  if(k==='mc_fe'||k==='mc_ef'){
+    const l=k==='mc_fe'?'en':'fr';
+    area=`<div class="opts" role="group" aria-label="Answers">${q.opts.map((o,i)=>`<button type="button" class="opt" data-action="opt" data-opt="${i}"><kbd>${i+1}</kbd><span lang="${l}">${esc(o.text)}</span></button>`).join('')}</div>`;
+  }else if(k==='type_fe'){
+    area=`<div><label class="sr" for="ans">Your answer in English</label><input id="ans" class="field" type="text" lang="en" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="English"></div>`;
+  }else if(k==='type_ef'){
+    area=`<div style="display:grid;gap:10px"><label class="sr" for="ans">Your answer in French</label><input id="ans" class="field" type="text" lang="fr" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Français">${keysHtml()}</div>`;
+  }else if(k==='conj'){
+    area=`<div style="display:grid;gap:10px"><div class="conjrow"><span class="pron" lang="fr">${esc(it.verb.pron)}</span><label class="sr" for="ans">Verb form</label><input id="ans" class="field" type="text" lang="fr" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="…"></div>${keysHtml()}</div>`;
+  }else if(k==='tiles'){
+    area=`<div style="display:grid;gap:14px"><div class="line" id="line" aria-label="Your answer"></div><div class="bank" id="bank" role="group" aria-label="Word bank"></div></div>`;
+  }else if(k==='accent'){
+    area=`<div class="cells" id="cells" role="group" aria-label="Letters. Tap a vowel to cycle its accent."></div>`;
+  }else if(k==='article'){
+    area=`<div class="arts" role="group" aria-label="Articles">${['le','la',"l'"].map((a,i)=>`<button type="button" class="art" data-action="art" data-art="${esc(a)}" lang="fr">${esc(a)}<kbd>${i+1}</kbd></button>`).join('')}</div>`;
+  }
+  const needsCheck=!(k==='mc_fe'||k==='mc_ef'||k==='article');
+  $('#qhost').innerHTML=`<article class="qcard" id="qcard" tabindex="-1" aria-labelledby="qprompt">
+    <div class="qmeta"><span class="tag">${esc(CATLABEL[it.cat])}</span><span class="kind">${KINDLABEL[k]}</span>
+      <span class="pips" role="img" aria-label="Difficulty ${q.d+1} of 4">${[0,1,2,3].map(i=>`<i class="${i<=q.d?'on':''}"></i>`).join('')}</span></div>
+    <p class="qlabel">${INSTR[k]}${q.why?` <span class="hint">· ${esc(q.why)}</span>`:''}</p>
+    <h2 class="prompt" id="qprompt" lang="${promptLang}">${promptHtml}</h2>
+    ${sub?`<p class="sub">${esc(sub)}</p>`:''}
+    ${area}
+    <div class="fb" id="fb" aria-live="polite" hidden></div>
+    <div class="qactions" id="qactions">${needsCheck?'<button type="button" class="btn btn-primary" data-action="check" id="checkBtn">Check</button>':''}${k==='tiles'?'<button type="button" class="btn btn-ghost" data-action="clear">Clear</button>':''}</div>
+  </article>`;
+  if(k==='tiles')paintTiles();
+  if(k==='accent')paintCells();
+  const inp=$('#ans');
+  if(inp)inp.focus();else $('#qcard').focus();
+}
+function keysHtml(){return `<div class="keys" role="group" aria-label="Accent keys">${KEYS.map(c=>`<button type="button" class="key" data-action="key" data-ch="${esc(c)}" aria-label="insert ${esc(c)}">${esc(c)}</button>`).join('')}</div>`;}
+function paintTiles(){
+  const q=S.q;
+  $('#line').innerHTML=q.line.map(id=>{const t=q.bank.find(b=>b.id===id);return `<button type="button" class="tile" data-action="tile" data-id="${id}" lang="fr">${esc(t.text)}</button>`;}).join('');
+  $('#bank').innerHTML=q.bank.filter(b=>!q.line.includes(b.id)).map(t=>`<button type="button" class="tile" data-action="tile" data-id="${t.id}" lang="fr">${esc(t.text)}</button>`).join('');
+}
+function paintCells(){
+  const q=S.q;
+  $('#cells').innerHTML=q.cells.map((c,i)=>{
+    if(c.gap)return '<span class="gap"></span>';
+    if(c.fixed)return `<span class="fixed" lang="fr">${esc(c.ch)}</span>`;
+    return `<button type="button" class="cell${c.idx?' changed':''}" data-action="cell" data-i="${i}" lang="fr" aria-label="${esc(c.ch)}, tap to change accent">${esc(c.ch)}</button>`;
+  }).join('');
+}
+
+/* ---------- grading ---------- */
+function gradeFr(inp,expected,it){
+  const u=normFr(inp),exp=expected.map(normFr),us=strip(u);
+  if(exp.includes(u))return {r:'ok'};
+  if(exp.some(e=>strip(e)===us))return {r:'accent'};
+  if(it&&it.art){
+    const m=u.match(/^(le |la |l'|les |un |une )\s*(.*)$/);
+    const un=m?m[2]:u;
+    if(strip(un)===strip(normFr(it.noun)))return {r:'article',missing:!m};
+  }
+  let best=99;exp.forEach(e=>{best=Math.min(best,lev(strip(e),us));});
+  const L=Math.max.apply(null,exp.map(e=>e.length));
+  if(best<=1||(best<=2&&L>=9))return {r:'close'};
+  return {r:'wrong'};
+}
+function hlAccents(exp,typed){
+  const e=exp.normalize('NFC'),t=typed.normalize('NFC').replace(/[.…]+/g,'').trim().toLowerCase();
+  if(e.length!==t.length)return esc(e);
+  let out='';for(let i=0;i<e.length;i++){out+=e[i].toLowerCase()!==t[i]?'<mark>'+esc(e[i])+'</mark>':esc(e[i]);}
+  return out;
+}
+const pairHtml=it=>`<p class="pair"><span lang="fr">${esc(it.fr)}</span> · <span lang="en">${esc(it.en)}</span></p>`;
+const alsoHtml=it=>{const a=(it.alts||[]).filter(x=>!it.accepted.has(normEn(x))||true).slice(0,4);return a.length?`<p class="note">Also accepted: ${esc(a.join(', '))}</p>`:'';};
+const mineHtml=s=>s?`<p class="note">You wrote: <span>${esc(s)}</span></p>`:'';
+function genderMsg(it){
+  const g=it.g==='m'?'masculine':'feminine';
+  return it.art==="l'"?`${it.noun} is ${g}, but it starts with a vowel or a silent h, so the article becomes l'.`:`${it.noun} is ${g}, so it takes ${it.art}.`;
+}
+function R(state,title,html,points,errType,mine){return {state:state,title:title,html:html,points:points,errType:errType||'',mine:mine||''};}
+function gradeMC(q,i){
+  q.chosen=i;const o=q.opts[i];const right=q.opts.find(x=>x.correct);
+  if(o.correct)return R('ok','Correct',pairHtml(q.item),1,'',o.text);
+  return R('bad','Not quite',`<p class="note">You chose: ${esc(o.text)}</p>${pairHtml(q.item)}`,0,'vocab',o.text);
+}
+/* English spelling is not what is being tested, so typos are forgiven: letters swapped, dropped, added or
+   doubled, and a missing or extra space. Short words must be exact (he and she are different answers) and an
+   answer that exactly matches a different word's translation is never forgiven. */
+function osa(a,b){
+  const m=a.length,n=b.length,d=[];
+  for(let i=0;i<=m;i++)d[i]=[i];
+  for(let j=1;j<=n;j++)d[0][j]=j;
+  for(let i=1;i<=m;i++)for(let j=1;j<=n;j++){
+    d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+    if(i>1&&j>1&&a[i-1]===b[j-2]&&a[i-2]===b[j-1])d[i][j]=Math.min(d[i][j],d[i-2][j-2]+1);
+  }
+  return d[m][n];
+}
+function tokenClose(t,a){
+  if(t===a)return true;
+  const L=Math.max(t.length,a.length);
+  if(L<=3||Math.abs(t.length-a.length)>2)return false;
+  if(L===4)return t[0]===a[0]&&osa(t,a)===1;
+  return osa(t,a)<=(L>=8?2:1);
+}
+function fuzzyEn(u,it){
+  if(!u)return false;
+  if(ITEMS.some(x=>x.id!==it.id&&x.accepted.has(u)&&!it.accepted.has(u)))return false;
+  const ut=u.split(' ');
+  for(const a of it.accepted){
+    const at=a.split(' ');
+    if(at.length===ut.length&&at.every((x,i)=>tokenClose(ut[i],x)))return true;
+    const uj=u.replace(/ /g,''),aj=a.replace(/ /g,'');
+    if(uj===aj)return true;
+    if(aj.length>=8&&osa(uj,aj)<=(aj.length>=10?2:1)&&at.length!==ut.length)return true;
+  }
+  return false;
+}
+function gradeTypeFe(q,inp){
+  const it=q.item,u=normEn(inp);
+  if(it.accepted.has(u))return R('ok','Correct',pairHtml(it)+alsoHtml(it),1,'',inp);
+  if(fuzzyEn(u,it))return R('ok','Correct',`<p class="note">Counted as correct. Standard spelling: <b lang="en">${esc(it.en)}</b></p>${pairHtml(it)}`,1,'',inp);
+  let best=99;it.accepted.forEach(a=>{if(a.length>=5)best=Math.min(best,lev(a,u));});
+  const close=best<=1||(best<=2&&u.length>=12);
+  return R('bad',close?'Close. Check the spelling':'Not quite',`<p class="ans" lang="en">${esc(it.en)}</p>${alsoHtml(it)}${mineHtml(inp)}<p class="pair" lang="fr">${esc(it.fr)}</p>`,0,close?'spelling':'vocab',inp);
+}
+function gradeTypeEf(q,inp){
+  const it=q.item;const g=gradeFr(inp,[it.core],it);
+  const ans=`<p class="ans" lang="fr">${esc(it.core)}</p>`;
+  if(g.r==='ok')return R('ok','Correct',pairHtml(it),1,'',inp);
+  if(g.r==='accent'){
+    const pts=S.acc==='warn'?1:0;
+    return R('warn',pts?'Right, but watch the accents':'Right word, accents missing',`<p class="ans" lang="fr">${hlAccents(it.core,inp)}</p>${mineHtml(inp)}${pairHtml(it)}`,pts,'accent',inp);
+  }
+  if(g.r==='article')return R('bad','Check the article',`<p class="note">${esc(g.missing?'Include the article.':'Right noun, wrong article.')} ${esc(genderMsg(it))}</p>${ans}${mineHtml(inp)}${pairHtml(it)}`,0,'article',inp);
+  return R('bad',g.r==='close'?'Close. Check the spelling':'Not quite',`${ans}${mineHtml(inp)}${pairHtml(it)}`,0,g.r==='close'?'spelling':'vocab',inp);
+}
+function gradeConj(q,inp){
+  const it=q.item,v=it.verb;const g=gradeFr(inp,[v.form,it.core],null);
+  const full=`<p class="ans" lang="fr">${esc(it.fr)}</p><p class="row" lang="fr">${esc(v.inf)}: ${esc(v.row)}</p>`;
+  if(g.r==='ok')return R('ok','Correct',`<p class="pair"><span lang="fr">${esc(it.fr)}</span> · ${esc(it.en)}</p>`,1,'',inp);
+  return R('bad',g.r==='close'?'Close. Check the ending':'Not quite',`${full}${mineHtml(inp)}`,0,'ending',inp);
+}
+function gradeTiles(q){
+  const it=q.item;
+  const words=q.line.map(id=>q.bank.find(b=>b.id===id).text);
+  const built=joinTokens(words);
+  if(normFr(built)===normFr(it.core))return R('ok','Correct',pairHtml(it),1,'',built);
+  const exp=it.tokens.map(t=>t.toLowerCase());
+  let type='order',title='Not quite';
+  if(words.length===exp.length){
+    const diff=[];words.forEach((w,i)=>{if(w!==exp[i])diff.push(i);});
+    if(diff.length===1&&['le','la',"l'"].includes(words[diff[0]])&&['le','la',"l'"].includes(exp[diff[0]])){type='article';title='Check the article';}
+  }
+  const extra=type==='article'&&it.art?`<p class="note">${esc(genderMsg(it))}</p>`:'';
+  return R('bad',title,`${extra}<p class="ans" lang="fr">${esc(it.core)}</p><p class="note">You built: ${esc(built)}</p>${pairHtml(it)}`,0,type,built);
+}
+function gradeAccent(q){
+  const it=q.item;const cur=q.cells.map(c=>c.ch).join('');
+  if(normFr(cur)===normFr(it.core))return R('ok','Correct',pairHtml(it),1,'',cur);
+  const bad=q.cells.filter(c=>c.vars&&c.ch!==c.exp).length+q.cells.filter(c=>c.vars&&c.ch===c.exp&&c.exp!==c.vars[0]).length;
+  return R('bad','Check the accents',`<p class="ans" lang="fr">${hlAccents(it.core,cur)}</p><p class="note">You made: ${esc(cur)}</p>${pairHtml(it)}`,0,'accent',cur);
+}
+function gradeArticle(q,a){
+  const it=q.item;q.chosenArt=a;
+  if(a===it.art)return R('ok','Correct',`<p class="pair"><span lang="fr">${esc(it.fr)}</span> · ${esc(it.en)}</p><p class="note">${esc(genderMsg(it))}</p>`,1,'',a);
+  return R('bad','Not quite',`<p class="ans" lang="fr">${esc(it.fr)}</p><p class="note">${esc(genderMsg(it))}</p><p class="note">You chose: ${esc(a)}</p>`,0,'article',a);
+}
+
+/* ---------- recording and reveal ---------- */
+function record(q,res){
+  /* nudge the word score and the format difficulty by how surprising the answer was (partial credit for accents) */
+  const s=store.items[q.item.id]||(store.items[q.item.id]={n:0,ok:0,bad:0,a:0,last:'',lastErr:''});
+  const y=res.state==='ok'?1:(res.state==='warn'?(res.points>=1?0.7:0.3):0);
+  const err=y-pOf(q.item,q.kind);
+  s.a=clamp((s.a||0)+0.9*err,-3.5,3.5);
+  if(!store.bk)store.bk={};
+  store.bk[q.kind]=clamp(bOf(q.kind)+0.12*err,-2.5,2.5);
+  s.n=(s.n||0)+1;
+  if(res.points>=1)s.ok=(s.ok||0)+1;else s.bad=(s.bad||0)+1;
+  s.last=res.state==='ok'?'ok':(res.state==='warn'?'acc':'bad');
+  s.lastErr=res.errType||'';
+  /* per-format recent results and decaying mistake-type counts drive the adaptive choice */
+  const h=store.sk[q.kind]||(store.sk[q.kind]=[]);h.push(res.points>=1?1:0);if(h.length>8)h.shift();
+  Object.keys(store.et).forEach(t=>{store.et[t]*=0.9;if(store.et[t]<0.05)delete store.et[t];});
+  if(res.errType)store.et[res.errType]=(store.et[res.errType]||0)+1;
+}
+function reveal(res){
+  const q=S.q;if(S.answered)return;
+  S.answered=true;
+  const before=Math.round(wordScore(q.item)*100);
+  record(q,res);
+  res.html+=`<p class="score-line">Word score ${before} → ${Math.round(wordScore(q.item)*100)}</p>`;
+  S.n++;S.points+=res.points;
+  const c=S.byCat[q.item.cat]||(S.byCat[q.item.cat]={asked:0,ok:0});c.asked++;c.ok+=res.points;
+  if(res.errType)S.errs[res.errType]=(S.errs[res.errType]||0)+1;
+  if(res.points<1||res.errType)S.log.push({item:q.item,kind:q.kind,errType:res.errType||'vocab',mine:res.mine||'',points:res.points});
+  if(res.points<1){S.missed[q.item.id]={item:q.item,mine:res.mine};S.retry.push({id:q.item.id,kind:q.kind,due:S.n+3});}
+  lockUI(q,res);
+  const fb=$('#fb');fb.className='fb '+res.state;fb.innerHTML=`<h3>${esc(res.title)}</h3>${res.html}`;fb.hidden=false;
+  const last=S.total!==Infinity&&S.n>=S.total;
+  $('#qactions').innerHTML=`<button type="button" class="btn btn-primary" data-action="next" id="nextBtn">${last?'See results':'Next'}</button>`;
+  $('#nextBtn').focus();
+  updateHeader();save();
+}
+function lockUI(q,res){
+  const k=q.kind;
+  if(k==='mc_fe'||k==='mc_ef'){
+    $$('.opt').forEach((b,i)=>{b.disabled=true;const o=q.opts[i];
+      if(o.correct){b.classList.add('is-right');b.insertAdjacentHTML('beforeend','<span class="st">Correct</span>');}
+      else if(i===q.chosen){b.classList.add('is-wrong');b.insertAdjacentHTML('beforeend','<span class="st">Your answer</span>');}
+      else b.classList.add('dim');});
+  }else if(k==='article'){
+    $$('.art').forEach(b=>{b.disabled=true;const a=b.dataset.art;
+      if(a===q.item.art)b.classList.add('is-right');else if(a===q.chosenArt)b.classList.add('is-wrong');else b.classList.add('dim');});
+  }else if(k==='type_fe'||k==='type_ef'||k==='conj'){
+    const i=$('#ans');i.readOnly=true;i.classList.add(res.state==='ok'?'is-ok':(res.state==='warn'?'is-warn':'is-bad'));
+    $$('.keys').forEach(x=>{x.hidden=true;});
+  }else if(k==='tiles'){
+    $$('.tile').forEach(b=>{b.disabled=true;});$('#line').classList.add(res.state==='ok'?'is-ok':'is-bad');
+    $('#bank').hidden=true;
+  }else if(k==='accent'){
+    q.cells.forEach((c,i)=>{if(!c.vars)return;const b=$(`[data-i="${i}"]`);if(!b)return;b.disabled=true;b.classList.remove('changed');b.classList.add(c.ch===c.exp?'good':'bad');});
+  }
+}
+function onCheck(){
+  if(!S||S.answered)return;
+  const q=S.q;let res=null;
+  if(q.kind==='type_fe'||q.kind==='type_ef'||q.kind==='conj'){
+    const v=$('#ans').value;if(!v.trim()){$('#ans').focus();return;}
+    res=q.kind==='type_fe'?gradeTypeFe(q,v):(q.kind==='type_ef'?gradeTypeEf(q,v):gradeConj(q,v));
+  }else if(q.kind==='tiles'){
+    if(!q.line.length)return;res=gradeTiles(q);
+  }else if(q.kind==='accent'){
+    res=gradeAccent(q);
+  }
+  if(res)reveal(res);
+}
+
+/* ---------- evaluation of the wrong answers ---------- */
+const ACCENT_TIPS={
+ 'é':'é sounds like "ay" and is the most common accent.',
+ 'è':'è is an open sound, usually before a consonant and a silent e, as in bibliothèque and routière.',
+ 'ê':'The circumflex (ê, â, ô, î, û) often marks a lost s: hôpital, hôtel, pâtisserie, théâtre, église.',
+ 'â':'The circumflex (ê, â, ô, î, û) often marks a lost s: hôpital, hôtel, pâtisserie, théâtre, église.',
+ 'ô':'The circumflex (ê, â, ô, î, û) often marks a lost s: hôpital, hôtel, pâtisserie, théâtre, église.',
+ 'î':'The circumflex (ê, â, ô, î, û) often marks a lost s: hôpital, hôtel, pâtisserie, théâtre, église.',
+ 'û':'The circumflex (ê, â, ô, î, û) often marks a lost s: hôpital, hôtel, pâtisserie, théâtre, église.',
+ 'ç':'ç makes a soft s sound before a, o or u.',
+ 'à':'à means "to" or "at" and always keeps its accent, unlike a, which means "has".'
+};
+const VERB_NOTE={
+ aller:'aller is irregular, so learn it as a block. il, elle and on all take va; ils and elles take vont.',
+ voir:'voir changes in the plural: voyons, voyez, voient. je and tu both take vois; il, elle and on take voit.',
+ sortir:'sortir drops its t in the singular (sors, sors, sort) and gets it back in the plural (sortons, sortez, sortent).'
+};
+const TIPS={
+ "la librairie":"False friend: la librairie is a bookshop. The library is la bibliothèque.",
+ "la bibliothèque":"A bibliothèque is a library. A bookshop is la librairie.",
+ "l'hôtel de ville":"Not a hotel. l'hôtel de ville is the town hall.",
+ "la gare":"la gare is the train station. The bus station is la gare routière.",
+ "la gare routière":"routière comes from route, so la gare routière is the bus station.",
+ "la boulangerie":"The -erie ending marks a shop: la boulangerie (bread), la pâtisserie (cakes), la boucherie (meat).",
+ "la pâtisserie":"The -erie ending marks a shop: la pâtisserie sells cakes and pastries.",
+ "la boucherie":"The -erie ending marks a shop: la boucherie is the butcher's.",
+ "l'épicerie":"l'épicerie is the small grocer's. The big shop is le supermarché.",
+ "le supermarché":"le supermarché is the big shop. The small grocer's is l'épicerie.",
+ "la poste":"la poste is the post office. Tobacco and stamps are also sold at le bureau de tabac.",
+ "le bureau de tabac":"le bureau de tabac is the tobacconist, a different place from la poste.",
+ "le coiffeur":"le coiffeur is a male hairdresser; la coiffeuse is a female one.",
+ "la coiffeuse":"la coiffeuse is a female hairdresser; le coiffeur is a male one.",
+ "la gendarmerie":"In France la gendarmerie is the police station.",
+ "la caserne des pompiers":"les pompiers are the firefighters, so la caserne des pompiers is the fire station.",
+ "les feux":"les feux is plural, the traffic lights, so it takes les.",
+ "le rond-point":"le rond-point is the roundabout: rond is round.",
+ "le carrefour":"le carrefour is the crossroads or junction.",
+ "Tournez à gauche":"Tournez means turn. Prenez means take. gauche is left and droite is right.",
+ "Tournez à droite":"Tournez means turn. Prenez means take. droite is right and gauche is left.",
+ "Prenez la première rue":"Prenez means take. première (first) and deuxième (second) both carry accents.",
+ "Prenez la deuxième rue":"Prenez means take. première (first) and deuxième (second) both carry accents.",
+ "Continuez tout droit":"Continuez means continue and tout droit means straight on.",
+ "Continuez jusqu'à ...":"jusqu'à means until or as far as, and the à keeps its accent.",
+ "l'office du tourisme":"l'office du tourisme is the tourist office. office starts with a vowel, so it takes l'.",
+ "l'hôpital":"l'hôpital has a circumflex, and the silent h means it takes l'.",
+ "la fromagerie":"fromage is cheese, so la fromagerie is the cheese shop.",
+ "la poissonnerie":"poisson is fish, so la poissonnerie is the fishmonger's.",
+ "la charcuterie":"la charcuterie sells cooked pork meats, like a deli.",
+ "la confiserie":"la confiserie is a sweet shop.",
+ "la papeterie":"papier is paper, so la papeterie is the stationery shop.",
+ "le fleuriste":"fleur is flower, so le fleuriste is the florist."
+};
+/* mark the letters of the correct answer that the learner's answer is missing or got wrong */
+function diffMark(c,t){
+  const a=c.toLowerCase(),b=t.toLowerCase().replace(/[.…]+/g,'').trim(),m=a.length,n=b.length;
+  const L=Array.from({length:m+1},()=>new Array(n+1).fill(0));
+  for(let i=m-1;i>=0;i--)for(let j=n-1;j>=0;j--)L[i][j]=a[i]===b[j]?L[i+1][j+1]+1:Math.max(L[i+1][j],L[i][j+1]);
+  let i=0,j=0,out='';
+  while(i<m){
+    if(j<n&&a[i]===b[j]){out+=esc(c[i]);i++;j++;}
+    else if(j<n&&L[i][j+1]>=L[i+1][j]){j++;}
+    else{out+='<mark>'+esc(c[i])+'</mark>';i++;}
+  }
+  return out;
+}
+function askedOf(e){
+  const it=e.item,k=e.kind;
+  if(k==='mc_fe'||k==='type_fe')return {text:it.fr,lang:'fr'};
+  if(k==='article')return {text:`${it.noun} (${it.en})`,lang:'fr'};
+  if(k==='conj')return {text:`${it.verb.pron} … (${it.verb.inf})`,lang:'fr'};
+  return {text:it.en,lang:'en'};
+}
+function correctOf(e){
+  const k=e.kind,it=e.item;
+  if(k==='mc_fe'||k==='type_fe')return it.en;
+  if(k==='type_ef'||k==='accent'||k==='tiles')return it.core;
+  return it.fr;
+}
+/* did the learner give a real answer that belongs to a different word? */
+function confusedWith(e){
+  const m=e.mine,it=e.item,k=e.kind;
+  if(!m)return null;
+  if(k==='mc_fe')return ITEMS.find(x=>x.en===m&&x.id!==it.id)||null;
+  if(k==='mc_ef')return ITEMS.find(x=>x.fr===m&&x.id!==it.id)||null;
+  if(k==='type_fe'){const u=normEn(m);return ITEMS.find(x=>x.id!==it.id&&x.accepted.has(u)&&!it.accepted.has(u))||null;}
+  if(k==='type_ef'){const u=normFr(m);return ITEMS.find(x=>x.id!==it.id&&normFr(x.core)===u)||null;}
+  if(k==='conj'){const u=normFr(m);return ITEMS.find(x=>x.id!==it.id&&x.verb&&it.verb&&x.verb.key===it.verb.key&&(normFr(x.verb.form)===u||normFr(x.core)===u))||null;}
+  return null;
+}
+function whyHtml(e){
+  const it=e.item,k=e.kind,t=e.errType,conf=confusedWith(e),out=[];
+  const b=s=>`<b lang="fr">${esc(s)}</b>`;
+  if(t==='accent'){
+    const ws=it.core.split(' ').filter(w=>strip(w)!==w);
+    out.push(`Accents are part of the spelling in French, so a missing or wrong accent is a mistake. Watch ${ws.map(b).join(', ')}.`);
+    const tips=[];Array.from(it.core.toLowerCase()).forEach(c=>{if(ACCENT_TIPS[c]&&!tips.includes(ACCENT_TIPS[c]))tips.push(ACCENT_TIPS[c]);});
+    tips.forEach(x=>out.push(esc(x)));
+  }else if(t==='article'){
+    out.push(esc(it.art?genderMsg(it):'Check which article goes with the noun.'));
+    out.push(`Learn each noun with its article as one chunk, for example ${b(it.fr)}.`);
+  }else if(t==='ending'){
+    const v=it.verb;
+    out.push(`With <b lang="fr">${esc(v.pron)}</b>, ${esc(v.inf)} becomes ${b(v.form)}.`);
+    if(conf&&conf.verb)out.push(`What you wrote is the form for <b lang="fr">${esc(conf.verb.pron)}</b>.`);
+    out.push(esc(VERB_NOTE[v.key]));
+    out.push(`<span class="mono" lang="fr">${esc(v.row)}</span>`);
+  }else if(t==='order'){
+    out.push(`The words are in the wrong order, or one of them is wrong. The correct phrase is ${b(it.core)}.`);
+    out.push('Directions follow the pattern verb, article, noun, as in Prenez la deuxième rue.');
+  }else if(t==='spelling'){
+    out.push('Right idea, but the spelling is off. The highlighted letters are the ones you missed or changed.');
+  }else{
+    if(conf){
+      if(k==='mc_fe'||k==='type_fe')out.push(`You gave the meaning of ${b(conf.fr)}. ${b(it.fr)} means <b lang="en">${esc(it.en)}</b>.`);
+      else out.push(`You gave ${b(e.mine)}, which means <b lang="en">${esc(conf.en)}</b>. The French for <b lang="en">${esc(it.en)}</b> is ${b(it.fr)}.`);
+    }else out.push(`You did not recall this one. ${b(it.fr)} means <b lang="en">${esc(it.en)}</b>.`);
+  }
+  if(t!=='ending'&&TIPS[it.fr])out.push(esc(TIPS[it.fr]));
+  return out.map(x=>`<p>${x}</p>`).join('');
+}
+function evalCard(e){
+  const it=e.item,k=e.kind,a=askedOf(e);
+  const fl=(k==='mc_fe'||k==='type_fe')?'en':'fr';
+  const label=(k==='mc_fe'||k==='mc_ef'||k==='article')?'You chose':(k==='tiles'?'You built':'You wrote');
+  const diffable=['type_ef','accent','tiles'].includes(k)&&e.mine&&['accent','spelling','order'].includes(e.errType);
+  const corr=diffable?diffMark(it.core,e.mine):esc(correctOf(e));
+  return `<li class="eval"><div class="eval-head"><span class="tag">${esc(KINDSHORT[k])}</span><span class="eval-q" lang="${a.lang}">${esc(a.text)}</span>${e.count>1?`<span class="hint">missed ${e.count} times</span>`:''}${e.points>=1?'<span class="hint">accepted in Forgiving mode</span>':''}</div>
+    <dl><dt>${label}</dt><dd lang="${fl}">${esc(e.mine||'(no answer)')}</dd><dt>Correct</dt><dd lang="${fl}">${corr}</dd></dl>
+    <div class="why">${whyHtml(e)}</div></li>`;
+}
+function evaluationHtml(){
+  const seen={},rows=[];
+  S.log.forEach(e=>{
+    const key=e.item.id+'|'+e.kind;
+    if(seen[key]){seen[key].count++;seen[key].mine=e.mine;seen[key].errType=e.errType;seen[key].points=e.points;}
+    else{seen[key]=Object.assign({count:1},e);rows.push(seen[key]);}
+  });
+  if(!rows.length)return '';
+  const top=Object.keys(S.errs).filter(x=>ERRLABEL[x]).sort((a,b)=>S.errs[b]-S.errs[a])[0];
+  const lead=top?`<p>Most of your slips were <b>${esc(ERRLABEL[top][0].toLowerCase())}</b> (${S.errs[top]} of ${S.log.length}). ${esc(ERRLABEL[top][1])}</p>`:'';
+  return `<section class="panel"><h2>Evaluation</h2><p class="hint">Every answer you missed, and why it was wrong.</p>${lead}<ul class="evals">${rows.map(evalCard).join('')}</ul></section>`;
+}
+
+/* ---------- summary ---------- */
+function fmtTime(ms){const s=Math.round(ms/1000);return s<60?s+' s':Math.floor(s/60)+' min '+(s%60)+' s';}
+function showSummary(){
+  view='summary';
+  const n=S.n,pts=S.points,pct=n?Math.round(pts/n*100):0;
+  if(n){store.last={pts:pts,n:n,date:Date.now()};save();}
+  const msg=pct>=90?'Very solid. Run it again in Type the answer to be sure of spelling and accents.':(pct>=70?'Good base. The words below need another pass.':'Keep going. The words you missed will come back first in your next test.');
+  const errs=Object.keys(S.errs).filter(k=>S.errs[k]>0&&ERRLABEL[k]).sort((a,b)=>S.errs[b]-S.errs[a]);
+  const work=errs.length?`<ul class="work">${errs.map(k=>`<li><b>${ERRLABEL[k][0]} · ${S.errs[k]}</b><span>${esc(ERRLABEL[k][1])}</span></li>`).join('')}</ul>`:'<p>No mistakes this round.</p>';
+  const cats=Object.keys(S.byCat).map(c=>{const b=S.byCat[c];const p=Math.round(b.ok/b.asked*100);
+    return `<div class="catrow"><span>${esc(CATLABEL[c])}</span><div class="bar" aria-hidden="true"><i style="width:${p}%"></i></div><span class="n">${b.ok}/${b.asked}</span></div>`;}).join('');
+  const missed=Object.keys(S.missed).map(id=>S.missed[id]);
+  const evaluation=evaluationHtml();
+  app.innerHTML=`<div class="wrap">
+    <header class="plaque small"><h1>Résultat</h1></header>
+    <section class="panel">
+      <div class="result"><span class="big">${pts}</span><span class="of">of ${n}</span><span class="pct">${pct}%</span></div>
+      <p>${esc(msg)} <span class="hint">${fmtTime(Date.now()-S.t0)}</span></p>
+    </section>
+    <section class="panel"><h2>What to work on</h2>${work}</section>
+    ${cats?`<section class="panel"><h2>By list</h2><div class="catrows">${cats}</div></section>`:''}
+    ${evaluation}
+    <div class="actions">
+      ${missed.length?'<button type="button" class="btn btn-primary" data-action="practiceMissed">Practise missed words</button>':'<button type="button" class="btn btn-primary" data-action="again">Test again</button>'}
+      <button type="button" class="btn btn-ghost" data-action="setup">Back to setup</button>
+    </div>
+  </div>`;
+  window.scrollTo(0,0);
+}
+
+/* ---------- events ---------- */
+app.addEventListener('mousedown',e=>{if(e.target.closest('.key'))e.preventDefault();});
+app.addEventListener('change',e=>{
+  if(view!=='setup')return;
+  const t=e.target;
+  if(t.name==='fmt')cfg.fmt=t.value;else if(t.name==='dir')cfg.dir=t.value;else if(t.name==='len')cfg.len=+t.value;else if(t.name==='acc')cfg.acc=t.value;else return;
+  refreshSetup();
+});
+app.addEventListener('keydown',e=>{
+  if(e.target.id==='ans'&&e.key==='Enter'){e.preventDefault();onCheck();}
+});
+document.addEventListener('keydown',e=>{
+  if(view!=='quiz'||!S||!S.q)return;
+  if(e.ctrlKey||e.metaKey||e.altKey)return;
+  const tag=(e.target&&e.target.tagName)||'';
+  if(tag==='INPUT'||tag==='TEXTAREA')return;
+  if(!S.answered&&/^[1-4]$/.test(e.key)){
+    const b=$(`[data-opt="${+e.key-1}"]`)||$$('.art')[+e.key-1];
+    if(b){e.preventDefault();b.click();}
+  }else if(S.answered&&e.key==='Enter'&&tag!=='BUTTON'){
+    const b=$('#nextBtn');if(b){e.preventDefault();b.click();}
+  }
+});
+let resetTimer=null;
+app.addEventListener('click',e=>{
+  const t=e.target.closest('button');if(!t)return;
+  const a=t.dataset.action;if(!a)return;
+  if(a==='chip'){
+    const c=t.dataset.cat;cfg.cats=cfg.cats.includes(c)?cfg.cats.filter(x=>x!==c):cfg.cats.concat([c]);refreshSetup();
+  }else if(a==='weak'){cfg.weak=!cfg.weak;refreshSetup();}
+  else if(a==='start'){startSession();}
+  else if(a==='reset'){
+    if(t.dataset.armed){clearTimeout(resetTimer);store.items={};store.last=null;store.sk={};store.et={};save();renderSetup();}
+    else{t.dataset.armed='1';t.textContent='Tap again to erase all progress';resetTimer=setTimeout(()=>{t.dataset.armed='';t.textContent='Reset progress';},4000);}
+  }
+  else if(a==='quit'||a==='setup'){renderSetup();}
+  else if(a==='finish'){if(S&&S.n>0)showSummary();else renderSetup();}
+  else if(a==='again'){startSession();}
+  else if(a==='practiceMissed'){
+    const pool=Object.keys(S.missed).map(id=>S.missed[id].item);
+    startSession({pool:pool,fmt:'adaptive',dir:'mix',len:Math.max(10,pool.length*2)});
+  }
+  else if(a==='opt'){if(S&&!S.answered)reveal(gradeMC(S.q,+t.dataset.opt));}
+  else if(a==='art'){if(S&&!S.answered)reveal(gradeArticle(S.q,t.dataset.art));}
+  else if(a==='check'){onCheck();}
+  else if(a==='next'){
+    if(S.total!==Infinity&&S.n>=S.total)showSummary();else nextQuestion();
+  }
+  else if(a==='key'){
+    const i=$('#ans');if(!i||i.readOnly)return;
+    const s=i.selectionStart==null?i.value.length:i.selectionStart,en=i.selectionEnd==null?s:i.selectionEnd;
+    i.value=i.value.slice(0,s)+t.dataset.ch+i.value.slice(en);i.setSelectionRange(s+1,s+1);i.focus();
+  }
+  else if(a==='tile'){
+    const q=S.q;if(S.answered)return;const id=+t.dataset.id;
+    const k=q.line.indexOf(id);if(k>=0)q.line.splice(k,1);else q.line.push(id);
+    paintTiles();
+  }
+  else if(a==='clear'){if(S&&!S.answered){S.q.line=[];paintTiles();}}
+  else if(a==='cell'){
+    const q=S.q;if(S.answered)return;const c=q.cells[+t.dataset.i];
+    c.idx=(c.idx+1)%c.vars.length;c.ch=c.vars[c.idx];
+    t.textContent=c.ch;t.classList.toggle('changed',c.idx>0);t.setAttribute('aria-label',c.ch+', tap to change accent');
+  }
+});
+
+renderSetup();
+})();
+</script>
+
+</body></html>
